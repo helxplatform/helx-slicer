@@ -16,11 +16,11 @@ ENV HEADLESS_USER_GROUP_ID=1136
 USER root
 
 WORKDIR /tmp
-RUN wget $CUDA_KEYRING_URL && \
-  dpkg -i $CUDA_KEYRING && rm -f $CUDA_KEYRING && \
-  apt-get update && apt-get install -y cuda-toolkit-12-2
-ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
-
+# RUN wget $CUDA_KEYRING_URL && \
+#   dpkg -i $CUDA_KEYRING && rm -f $CUDA_KEYRING && \
+#   apt-get update && apt-get install -y cuda-toolkit-12-2
+# ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
+RUN apt-get update
 ## install dependencies for Slicer and a good text editor
 RUN apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev libxcb-xinerama0 qtbase5-dev vim
 

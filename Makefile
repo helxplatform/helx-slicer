@@ -66,6 +66,12 @@ run: ## Run container on port configured in `config.env`
 	  $(HOST_MOUNT) $(GPUS_ARG) -p=$(CONTAINER_PORT):$(FORWARDING_PORT) \
 	  --name="$(APP_NAME)" $(APP_NAME) $(ENTRYPOINT)
 
+run-nongpu: 
+	mkdir -p ./host
+	docker run -i -t --rm --env-file=./run.env -u $(UID):$(GID) \
+	  $(HOST_MOUNT) -p=$(CONTAINER_PORT):$(FORWARDING_PORT) \
+	  --name="$(APP_NAME)" $(APP_NAME) $(ENTRYPOINT)
+
 run-kaniko: ## Run container on port configured in `config.env` using remote image built by Kaniko.
 	mkdir -p ./host
 	docker run -i -t --rm --env-file=./run.env -u $(UID):$(GID) \
