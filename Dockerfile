@@ -22,7 +22,7 @@ WORKDIR /tmp
 # ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
 RUN apt-get update
 ## install dependencies for Slicer and a good text editor
-RUN apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev libxcb-xinerama0 qtbase5-dev vim
+RUN apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev libxcb-xinerama0 qtbase5-dev vim xvfb
 
 # Change UID/GID for headless user for HeLx purposes.
 RUN groupmod -g "$HEADLESS_USER_GROUP_ID" "$HEADLESS_USER_GROUP_NAME" && \
@@ -44,6 +44,16 @@ RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
   rm -f slicer.tar.gz && \
   chown -R $HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID /app/slicer && \
   ln -s /app/slicer/Slicer /usr/local/bin/slicer
+
+# Install slicer extensions (defined in MakeFile)
+ARG SLICER_EXTS
+COPY install-slicer-extension.py /tmp
+RUN \
+for ext in ${SLICER_EXTS} ; \
+do echo "Installing ${ext}" ; \
+  EXTENSION_TO_INSTALL=${ext} \
+  xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-slicer-extension.py ; \
+done
 
 # Use local Slicer tarball to extract app files.
 # ARG SLICER_VERSION="Slicer-5.5.0-2023-08-25-linux-amd64"

@@ -39,6 +39,13 @@ build: ## Build the image.
 		--build-arg BASE_IMAGE_TAG=${BASE_IMAGE_TAG} \
 		-t ${APP_NAME} .
 
+build-totseg: ### build the image with total segmentator
+		docker build --pull \
+		--build-arg BASE_IMAGE=${BASE_IMAGE} \
+		--build-arg BASE_IMAGE_TAG=${BASE_IMAGE_TAG} \
+		--build-arg SLICER_EXTS=${SLICER_TOTSEG_EXTS} \
+		-t ${APP_NAME} .
+
 build-nc: ## Build the image without caching.
 	    docker build --pull --no-cache \
 		--build-arg BASE_IMAGE=${BASE_IMAGE} \
@@ -66,7 +73,7 @@ run: ## Run container on port configured in `config.env`
 	  $(HOST_MOUNT) $(GPUS_ARG) -p=$(CONTAINER_PORT):$(FORWARDING_PORT) \
 	  --name="$(APP_NAME)" $(APP_NAME) $(ENTRYPOINT)
 
-run-nongpu: 
+run-nongpu:
 	mkdir -p ./host
 	docker run -i -t --rm --env-file=./run.env -u $(UID):$(GID) \
 	  $(HOST_MOUNT) -p=$(CONTAINER_PORT):$(FORWARDING_PORT) \
