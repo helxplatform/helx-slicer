@@ -15,14 +15,25 @@ ENV HEADLESS_USER_GROUP_ID=1136
 
 USER root
 
+### add 'index.html' for running vnc.html
+RUN echo \
+"<html>\n\
+<head>\n\
+  <meta http-equiv=\"refresh\" content=\"0; URL=vnc.html?password=headless&autoconnect=1&resize=remote\" />\n\
+</head>\n\
+<body>\n\
+  <p>If you see this <a href=\"vnc.html?autoconnect=1&resize=remote\">click here</a>.</p>\n\
+</body>\n\
+</html>\n\
+" > "${NOVNC_HOME}"/index.html
+
 WORKDIR /tmp
-# RUN wget $CUDA_KEYRING_URL && \
-#   dpkg -i $CUDA_KEYRING && rm -f $CUDA_KEYRING && \
-#   apt-get update && apt-get install -y cuda-toolkit-12-2
-# ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
-RUN apt-get update
+RUN wget $CUDA_KEYRING_URL && \
+  dpkg -i $CUDA_KEYRING && rm -f $CUDA_KEYRING && \
+  apt-get update && apt-get install -y cuda-toolkit-12-2
+ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
 ## install dependencies for Slicer and a good text editor
-RUN apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev libxcb-xinerama0 qtbase5-dev vim xvfb
+RUN apt-get update && apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev libxcb-xinerama0 qtbase5-dev vim xvfb
 
 # Change UID/GID for headless user for HeLx purposes.
 RUN groupmod -g "$HEADLESS_USER_GROUP_ID" "$HEADLESS_USER_GROUP_NAME" && \
@@ -31,6 +42,7 @@ RUN chmod 666 /etc/passwd /etc/group
 # Remove .initial_sudo_password to get rid of using sudo.
 RUN rm -f "${STARTUPDIR}"/.initial_sudo_password
 RUN chown -R $HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID $STARTUPDIR $HOME
+RUN chmod 666 /etc/passwd /etc/group
 
 ## Install Slicer
 # https://download.slicer.org/
@@ -80,4 +92,5 @@ done
 
 ## final changes for user environment
 WORKDIR "/home/$HEADLESS_USER_NAME"
+RUN chmod -R 777 "/home/$HEADLESS_USER_NAME"
 USER "$HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID"
