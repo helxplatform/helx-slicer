@@ -40,7 +40,8 @@ build: ## Build the image.
 		-t ${APP_NAME} .
 
 build-totseg: ### build the image with total segmentator
-		docker build --pull \
+		docker buildx build --pull \
+		--platform=linux/amd64 \
 		--build-arg BASE_IMAGE=${BASE_IMAGE} \
 		--build-arg BASE_IMAGE_TAG=${BASE_IMAGE_TAG} \
 		--build-arg SLICER_EXTS=${SLICER_TOTSEG_EXTS} \
@@ -76,7 +77,7 @@ run: ## Run container on port configured in `config.env`
 run-nongpu:
 	mkdir -p ./host
 	docker run -i -t --rm --env-file=./run.env -u $(UID):$(GID) \
-	  $(HOST_MOUNT) -p=$(CONTAINER_PORT):$(FORWARDING_PORT) \
+	  $(HOST_MOUNT) -p=$(CONTAINER_PORT):$(FORWARDING_PORT) -e \
 	  --name="$(APP_NAME)" $(APP_NAME) $(ENTRYPOINT)
 
 run-kaniko: ## Run container on port configured in `config.env` using remote image built by Kaniko.
