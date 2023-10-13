@@ -49,7 +49,8 @@ RUN chmod 666 /etc/passwd /etc/group
 
 # Download Slicer and extract without any changes.
 # Slicer Preview Release 5.5.0
-ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/64e43b5e24417468602a0fa6
+ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/6524d52356d7982c29d00cf4
+#https://download.slicer.org/bitstream/64e43b5e24417468602a0fa6
 WORKDIR /app
 RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
   mkdir slicer && tar -xf slicer.tar.gz -C slicer --strip-components 1 && \
@@ -57,15 +58,27 @@ RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
   chown -R $HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID /app/slicer && \
   ln -s /app/slicer/Slicer /usr/local/bin/slicer
 
-# Install slicer extensions (defined in MakeFile)
+# Install slicer extensions (defined in config.env)
 ARG SLICER_EXTS
 COPY install-slicer-extension.py /tmp
+COPY install-pytorch-in-slicer.py /tmp
 RUN \
 for ext in ${SLICER_EXTS} ; \
 do echo "Installing ${ext}" ; \
   EXTENSION_TO_INSTALL=${ext} \
   xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-slicer-extension.py ; \
 done
+RUN xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-pytorch-in-slicer.py ;
+RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib TotalSegmentator
+
+## final changes for user environment
+WORKDIR "/home/$HEADLESS_USER_NAME"
+RUN chmod -R 777 "/home/$HEADLESS_USER_NAME"
+RUN chmod -R 777 "/tmp/"
+USER "$HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID"
+## Start Slicer on desktop login
+## This seems to be XFCE specific, so if the base env changes, will need to find an alternative to this
+COPY Slicer.desktop "/home/$HEADLESS_USER_NAME/.config/autostart/"
 
 # Use local Slicer tarball to extract app files.
 # ARG SLICER_VERSION="Slicer-5.5.0-2023-08-25-linux-amd64"
@@ -89,8 +102,3 @@ done
 # COPY $PRERUN_SLICER_DIR /app/slicer
 # RUN chown -R $HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID /app/slicer && \
 #   ln -s /app/slicer/Slicer /usr/local/bin/slicer
-
-## final changes for user environment
-WORKDIR "/home/$HEADLESS_USER_NAME"
-RUN chmod -R 777 "/home/$HEADLESS_USER_NAME"
-USER "$HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID"
