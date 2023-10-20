@@ -19,7 +19,7 @@ USER root
 RUN echo \
 "<html>\n\
 <head>\n\
-  <meta http-equiv=\"refresh\" content=\"0; URL=vnc.html?password=headless&autoconnect=1&resize=remote\" />\n\
+  <meta http-equiv=\"refresh\" content=\"0; URL=vnc.html?password=headless&autoconnect=1&resize=remote&path=%NB_PREFIX%/webSockify\" />\n\
 </head>\n\
 <body>\n\
   <p>If you see this <a href=\"vnc.html?autoconnect=1&resize=remote\">click here</a>.</p>\n\
@@ -49,8 +49,8 @@ RUN chmod 666 /etc/passwd /etc/group
 
 # Download Slicer and extract without any changes.
 # Slicer Preview Release 5.5.0
-ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/6524d52356d7982c29d00cf4
-#https://download.slicer.org/bitstream/64e43b5e24417468602a0fa6
+ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/64e43b5e24417468602a0fa6
+#
 WORKDIR /app
 RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
   mkdir slicer && tar -xf slicer.tar.gz -C slicer --strip-components 1 && \
@@ -68,17 +68,21 @@ do echo "Installing ${ext}" ; \
   EXTENSION_TO_INSTALL=${ext} \
   xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-slicer-extension.py ; \
 done
+ENV PATH="${PATH}:/app/slicer/bin"
 RUN xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-pytorch-in-slicer.py ;
-RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib TotalSegmentator
+RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib batchgenerators>=0.25 totalsegmentator==1.5.3
 
 ## final changes for user environment
 WORKDIR "/home/$HEADLESS_USER_NAME"
-RUN chmod -R 777 "/home/$HEADLESS_USER_NAME"
-RUN chmod -R 777 "/tmp/"
+RUN chmod -R 777 "/home/$HEADLESS_USER_NAME" && \
+  chmod -R 777 "/tmp/" && \
+  chmod -R 777 "$NOVNC_HOME/"
 USER "$HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID"
 ## Start Slicer on desktop login
 ## This seems to be XFCE specific, so if the base env changes, will need to find an alternative to this
 COPY Slicer.desktop "/home/$HEADLESS_USER_NAME/.config/autostart/"
+## Copy the modified startup script. This is needed to change the index.html file to add NB_PREFIX to the vnc html file.
+COPY startup.sh /dockerstartup/
 
 # Use local Slicer tarball to extract app files.
 # ARG SLICER_VERSION="Slicer-5.5.0-2023-08-25-linux-amd64"
