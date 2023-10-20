@@ -58,6 +58,10 @@ RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
   chown -R $HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID /app/slicer && \
   ln -s /app/slicer/Slicer /usr/local/bin/slicer
 
+ARG WEIGHTS_URL=https://zenodo.org/record/6802052/files/Task256_TotalSegmentator_3mm_1139subj.zip?download=1
+
+RUN apt-get update && apt-get install -y unzip && wget ${WEIGHTS_URL}  -O TotalSegmentatorWeights.zip && mkdir "/home/$HEADLESS_USER_NAME/.totalsegmentator"
+
 # Install slicer extensions (defined in config.env)
 ARG SLICER_EXTS
 COPY install-slicer-extension.py /tmp
@@ -71,6 +75,12 @@ done
 ENV PATH="${PATH}:/app/slicer/bin"
 RUN xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-pytorch-in-slicer.py ;
 RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib batchgenerators>=0.25 totalsegmentator==1.5.3
+RUN /app/slicer/bin/PythonSlicer /app/slicer/lib/Python/bin/totalseg_import_weights -i /app/TotalSegmentatorWeights.zip
+
+# ARG WEIGHTS_URL=https://zenodo.org/record/6802052/files/Task256_TotalSegmentator_3mm_1139subj.zip?download=1
+
+# RUN apt-get update && apt-get install -y unzip && wget ${WEIGHTS_URL}  -O TotalSegmentatorWeights.zip && mkdir "/home/$HEADLESS_USER_NAME/.totalsegmentator" && \
+#     unzip TotalSegmentatorWeights.zip -d "/home/${HEADLESS_USER_NAME}/.totalsegmentator/"
 
 ## final changes for user environment
 WORKDIR "/home/$HEADLESS_USER_NAME"

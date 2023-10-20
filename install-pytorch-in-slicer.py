@@ -1,6 +1,5 @@
 
 import PyTorchUtils
-import TotalSegmentator
 
 torchLogic = PyTorchUtils.PyTorchUtilsLogic()
 minimumTorchVersion="1.12"
