@@ -48,8 +48,11 @@ RUN chmod 666 /etc/passwd /etc/group
 # https://download.slicer.org/
 
 # Download Slicer and extract without any changes.
-# Slicer Preview Release 5.5.0
-ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/64e43b5e24417468602a0fa6
+# Slicer Preview Release 5.5.0 (08/31/2023)
+#ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/64e43b5e24417468602a0fa6
+# Trying Slicer nightly (2023-08-19)
+ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/6533557935a0a163ae042939
+
 #
 WORKDIR /app
 RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
@@ -74,7 +77,7 @@ do echo "Installing ${ext}" ; \
 done
 ENV PATH="${PATH}:/app/slicer/bin"
 RUN xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-pytorch-in-slicer.py ;
-RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib batchgenerators>=0.25 totalsegmentator==1.5.3
+RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib batchgenerators>=0.25 totalsegmentator==1.5.7
 RUN /app/slicer/bin/PythonSlicer /app/slicer/lib/Python/bin/totalseg_import_weights -i /app/TotalSegmentatorWeights.zip
 
 # ARG WEIGHTS_URL=https://zenodo.org/record/6802052/files/Task256_TotalSegmentator_3mm_1139subj.zip?download=1
