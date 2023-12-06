@@ -33,7 +33,7 @@ RUN wget $CUDA_KEYRING_URL && \
   apt-get update && apt-get install -y cuda-toolkit-12-2
 ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
 ## install dependencies for Slicer and a good text editor
-RUN apt-get update && apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev libxcb-xinerama0 qtbase5-dev vim xvfb
+RUN apt-get update && apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev libxcb-xinerama0 qtbase5-dev vim xvfb wmctrl
 
 # Change UID/GID for headless user for HeLx purposes.
 RUN groupmod -g "$HEADLESS_USER_GROUP_ID" "$HEADLESS_USER_GROUP_NAME" && \
@@ -50,8 +50,10 @@ RUN chmod 666 /etc/passwd /etc/group
 # Download Slicer and extract without any changes.
 # Slicer Preview Release 5.5.0 (08/31/2023)
 #ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/64e43b5e24417468602a0fa6
-# Trying Slicer nightly (2023-08-19)
-ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/6533557935a0a163ae042939
+# Trying Slicer nightly (2023-10-21)
+#ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/6533557935a0a163ae042939
+# Updating Slicer to 5.6.0
+ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/65632f836865868506020c48
 
 #
 WORKDIR /app
@@ -69,6 +71,7 @@ RUN apt-get update && apt-get install -y unzip && wget ${WEIGHTS_URL}  -O TotalS
 ARG SLICER_EXTS
 COPY install-slicer-extension.py /tmp
 COPY install-pytorch-in-slicer.py /tmp
+COPY start-slicer.sh /tmp
 RUN \
 for ext in ${SLICER_EXTS} ; \
 do echo "Installing ${ext}" ; \
@@ -79,11 +82,6 @@ ENV PATH="${PATH}:/app/slicer/bin"
 RUN xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-pytorch-in-slicer.py ;
 RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib batchgenerators>=0.25 totalsegmentator==1.5.7
 RUN /app/slicer/bin/PythonSlicer /app/slicer/lib/Python/bin/totalseg_import_weights -i /app/TotalSegmentatorWeights.zip
-
-# ARG WEIGHTS_URL=https://zenodo.org/record/6802052/files/Task256_TotalSegmentator_3mm_1139subj.zip?download=1
-
-# RUN apt-get update && apt-get install -y unzip && wget ${WEIGHTS_URL}  -O TotalSegmentatorWeights.zip && mkdir "/home/$HEADLESS_USER_NAME/.totalsegmentator" && \
-#     unzip TotalSegmentatorWeights.zip -d "/home/${HEADLESS_USER_NAME}/.totalsegmentator/"
 
 ## final changes for user environment
 WORKDIR "/home/$HEADLESS_USER_NAME"
