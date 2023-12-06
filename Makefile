@@ -33,24 +33,20 @@ help: ## This help.
 
 .DEFAULT_GOAL := help
 
-build: ## Build the image.
-	    docker build --pull \
-		--build-arg BASE_IMAGE=${BASE_IMAGE} \
-		--build-arg BASE_IMAGE_TAG=${BASE_IMAGE_TAG} \
-		-t ${APP_NAME} .
-
-build-totseg: ### build the image with total segmentator
-		docker buildx build --pull \
+build: ### build the image with total segmentator
+		docker build --pull \
 		--platform=linux/amd64 \
 		--build-arg BASE_IMAGE=${BASE_IMAGE} \
 		--build-arg BASE_IMAGE_TAG=${BASE_IMAGE_TAG} \
-		--build-arg SLICER_EXTS=${SLICER_TOTSEG_EXTS} \
+		--build-arg SLICER_EXTS=${SLICER_EXTS} \
 		-t ${APP_NAME} .
 
 build-nc: ## Build the image without caching.
 	    docker build --pull --no-cache \
+		--platform=linux/amd64 \
 		--build-arg BASE_IMAGE=${BASE_IMAGE} \
 		--build-arg BASE_IMAGE_TAG=${BASE_IMAGE_TAG} \
+		--build-arg SLICER_EXTS=${SLICER_TOTSEG_EXTS} \
 		-t ${APP_NAME} .
 
 build-kaniko: ## Build the image with Kaniko.
