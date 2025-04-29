@@ -1,6 +1,6 @@
 # ARG BASE_IMAGE=accetto/ubuntu-vnc-xfce-firefox-g3
 ARG BASE_IMAGE=accetto/ubuntu-vnc-xfce-chromium-g3
-ARG BASE_IMAGE_TAG=latest
+ARG BASE_IMAGE_TAG=22.04
 FROM $BASE_IMAGE:$BASE_IMAGE_TAG
 
 ## install CUDA from nvidia repo
@@ -17,15 +17,15 @@ USER root
 
 ### add 'index.html' for running vnc.html
 RUN echo \
-"<html>\n\
-<head>\n\
+  "<html>\n\
+  <head>\n\
   <meta http-equiv=\"refresh\" content=\"0; URL=vnc.html?password=headless&autoconnect=1&resize=remote&path=%NB_PREFIX%/webSockify\" />\n\
-</head>\n\
-<body>\n\
+  </head>\n\
+  <body>\n\
   <p>If you see this <a href=\"vnc.html?autoconnect=1&resize=remote\">click here</a>.</p>\n\
-</body>\n\
-</html>\n\
-" > "${NOVNC_HOME}"/index.html
+  </body>\n\
+  </html>\n\
+  " > "${NOVNC_HOME}"/index.html
 
 WORKDIR /tmp
 RUN wget $CUDA_KEYRING_URL && \
@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev l
 
 # Change UID/GID for headless user for HeLx purposes.
 RUN groupmod -g "$HEADLESS_USER_GROUP_ID" "$HEADLESS_USER_GROUP_NAME" && \
-    usermod -u "$HEADLESS_USER_ID" -g "$HEADLESS_USER_GROUP_ID" "$HEADLESS_USER_NAME"
+  usermod -u "$HEADLESS_USER_ID" -g "$HEADLESS_USER_GROUP_ID" "$HEADLESS_USER_NAME"
 RUN chmod 666 /etc/passwd /etc/group
 # Remove .initial_sudo_password to get rid of using sudo.
 RUN rm -f "${STARTUPDIR}"/.initial_sudo_password
@@ -53,7 +53,9 @@ RUN chmod 666 /etc/passwd /etc/group
 # Trying Slicer nightly (2023-10-21)
 #ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/6533557935a0a163ae042939
 # Updating Slicer to 5.6.0
-ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/65632f836865868506020c48
+#ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/65632f836865868506020c48
+# Updating Slicer to 5.8.1 (2024-04-09)
+ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/67c51fc129825655577cfee9
 
 #
 WORKDIR /app
@@ -73,14 +75,14 @@ COPY install-slicer-extension.py /tmp
 COPY install-pytorch-in-slicer.py /tmp
 COPY start-slicer.sh /tmp
 RUN \
-for ext in ${SLICER_EXTS} ; \
-do echo "Installing ${ext}" ; \
+  for ext in ${SLICER_EXTS} ; \
+  do echo "Installing ${ext}" ; \
   EXTENSION_TO_INSTALL=${ext} \
   xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-slicer-extension.py ; \
-done
+  done
 ENV PATH="${PATH}:/app/slicer/bin"
 RUN xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-pytorch-in-slicer.py ;
-RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib batchgenerators>=0.25 totalsegmentator==1.5.7
+RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib batchgenerators>=0.25 totalsegmentator==1.5.7 idc-index==0.8.6
 RUN /app/slicer/bin/PythonSlicer /app/slicer/lib/Python/bin/totalseg_import_weights -i /app/TotalSegmentatorWeights.zip
 
 ## final changes for user environment

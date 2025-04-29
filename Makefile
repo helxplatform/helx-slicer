@@ -33,7 +33,7 @@ help: ## This help.
 
 .DEFAULT_GOAL := help
 
-build: ### build the image with total segmentator
+build: ### build the image with provided extensions
 		docker build --pull \
 		--platform=linux/amd64 \
 		--build-arg BASE_IMAGE=${BASE_IMAGE} \
