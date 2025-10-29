@@ -31,71 +31,53 @@ RUN echo \
 RUN apt-get update && apt-get install -y libglu1-mesa-dev libnss3 libpulse-dev libxcb-xinerama0 qtbase5-dev vim xvfb wmctrl
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y libnss-ldap 
 
-# WORKDIR /tmp
-# RUN wget $CUDA_KEYRING_URL && \
-#   dpkg -i $CUDA_KEYRING && rm -f $CUDA_KEYRING && \
-#   apt-get update && apt-get install -y cuda-toolkit-12-2
-# ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
+WORKDIR /tmp
+RUN wget $CUDA_KEYRING_URL && \
+  dpkg -i $CUDA_KEYRING && rm -f $CUDA_KEYRING && \
+  apt-get update && apt-get install -y cuda-toolkit-12-2
+ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
 
 ## START USER SETUP
 COPY root /
-RUN ls -l /init.sh
-
-RUN chmod +x /init.sh 
+RUN chmod +x /init.sh
 RUN /init.sh
 
 RUN rm -f "${STARTUPDIR}"/.initial_sudo_password
 RUN chmod -R 666 /etc/passwd /etc/group
 RUN chown -R $USER:$GID $STARTUPDIR $HOME $NOVNC_HOME
 
-# # Change UID/GID for headless user for HeLx purposes.
-# RUN groupmod -g "$HEADLESS_USER_GROUP_ID" "$HEADLESS_USER_GROUP_NAME" && \
-#   usermod -u "$HEADLESS_USER_ID" -g "$HEADLESS_USER_GROUP_ID" "$HEADLESS_USER_NAME"
-# RUN chmod 666 /etc/passwd /etc/group
-# # Remove .initial_sudo_password to get rid of using sudo.
-# RUN rm -f "${STARTUPDIR}"/.initial_sudo_password
-# RUN chown -R $HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID $STARTUPDIR $HOME
-# RUN chmod 666 /etc/passwd /etc/group
+## Install Slicer
+# https://download.slicer.org/
 
-# ## Install Slicer
-# # https://download.slicer.org/
-
-# # Download Slicer and extract without any changes.
-# # Slicer Preview Release 5.5.0 (08/31/2023)
-# #ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/64e43b5e24417468602a0fa6
-# # Trying Slicer nightly (2023-10-21)
-# #ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/6533557935a0a163ae042939
-# # Updating Slicer to 5.6.0
-# #ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/65632f836865868506020c48
-# # Updating Slicer to 5.8.1 (2024-04-09)
+# Download Slicer and extract without any changes.
+# Updating Slicer to 5.8.1 (2024-04-09)
 # ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/67c51fc129825655577cfee9
-
-# #
-# WORKDIR /app
-# RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
-#   mkdir slicer && tar -xf slicer.tar.gz -C slicer --strip-components 1 && \
-#   rm -f slicer.tar.gz && \
-#   chown -R $HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID /app/slicer && \
-#   ln -s /app/slicer/Slicer /usr/local/bin/slicer
-
-# ARG WEIGHTS_URL=https://zenodo.org/record/6802052/files/Task256_TotalSegmentator_3mm_1139subj.zip?download=1
-
-# RUN apt-get update && apt-get install -y unzip && wget ${WEIGHTS_URL}  -O TotalSegmentatorWeights.zip && mkdir "/home/$HEADLESS_USER_NAME/.totalsegmentator"
+ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/68fc5e93899e73de690004ad
+WORKDIR /app
+RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
+  mkdir slicer && tar -xf slicer.tar.gz -C slicer --strip-components 1 && \
+  rm -f slicer.tar.gz && \
+  chown -R $USER:$GID /app/slicer && \
+  ln -s /app/slicer/Slicer /usr/local/bin/slicer
 
 # # Install slicer extensions (defined in config.env)
-# ARG SLICER_EXTS
-# COPY install-slicer-extension.py /tmp
-# COPY install-pytorch-in-slicer.py /tmp
-# COPY start-slicer.sh /tmp
-# RUN \
-#   for ext in ${SLICER_EXTS} ; \
-#   do echo "Installing ${ext}" ; \
-#   EXTENSION_TO_INSTALL=${ext} \
-#   xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-slicer-extension.py ; \
-#   done
-# ENV PATH="${PATH}:/app/slicer/bin"
-# RUN xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-pytorch-in-slicer.py ;
-# RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib batchgenerators>=0.25 totalsegmentator==1.5.7 idc-index==0.8.6
+ARG SLICER_EXTS
+COPY install-slicer-extension.py /tmp
+COPY install-pytorch-in-slicer.py /tmp
+COPY start-slicer.sh /tmp
+RUN \
+  for ext in ${SLICER_EXTS} ; \
+  do echo "Installing ${ext}" ; \
+  EXTENSION_TO_INSTALL=${ext} \
+  xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-slicer-extension.py ; \
+  done
+ENV PATH="${PATH}:/app/slicer/bin"
+RUN xvfb-run --auto-servernum /app/slicer/Slicer --python-script /tmp/install-pytorch-in-slicer.py ;
+RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib idc-index totalsegmentator batchgenerators
+
+# ## Slicer-specific installations.
+# ARG WEIGHTS_URL=https://zenodo.org/record/6802052/files/Task256_TotalSegmentator_3mm_1139subj.zip?download=1
+# RUN apt-get update && apt-get install -y unzip && wget ${WEIGHTS_URL}  -O TotalSegmentatorWeights.zip
 # RUN /app/slicer/bin/PythonSlicer /app/slicer/lib/Python/bin/totalseg_import_weights -i /app/TotalSegmentatorWeights.zip
 
 # ## final changes for user environment
@@ -104,15 +86,14 @@ RUN chown -R $USER:$GID $STARTUPDIR $HOME $NOVNC_HOME
 #   chmod -R 777 "/tmp/" && \
 #   chmod -R 777 "$NOVNC_HOME/"
 # USER "$HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID"
-
-WORKDIR $HOME
-RUN chmod -R 777 "${HOME}" && \
-  chmod -R 777 "/tmp" && \
+RUN chmod -R 777 "/tmp" && \
   chmod -R 777 "${NOVNC_HOME}" && \
-  chmod -R 777 "${STARTUPDIR}"
+  chmod -R 777 "${STARTUPDIR}" && \
+  chmod -R 777 /app/
 # ## Start Slicer on desktop login
-# ## This seems to be XFCE specific, so if the base env changes, will need to find an alternative to this
-# COPY Slicer.desktop "/home/$HEADLESS_USER_NAME/.config/autostart/"
+## This seems to be XFCE specific, so if the base env changes, will need to find an alternative to this
+COPY Slicer.desktop /app/
+COPY SlicerLauncherSettings.ini /app/
 
 ## Copy the modified startup script. This is needed to change the index.html file to add NB_PREFIX to the vnc html file.
 COPY startup.sh "${STARTUPDIR}"

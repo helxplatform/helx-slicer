@@ -208,6 +208,13 @@ main() {
 }
 
 ### MAIN ENTRY POINT
+echo "${STARTUPDIR}"
+id
+whoami
+pwd
+echo "${USER}"
+echo "${HOME}"
+
 sed -i -e "s|%NB_PREFIX%|${NB_PREFIX#\/}|" "${NOVNC_HOME}/index.html"
 
 if [[ -z "${DEBUGGER}" ]] ; then
@@ -221,6 +228,11 @@ declare _verbose=""
 declare _vnc_log="${STARTUPDIR}"/vnc.log
 declare _wait_pid=""
 
+if [ ! -d "${HOME}/.config/autostart" ]; then
+    mkdir -p "${HOME}/.config/autostart"
+fi
+cp /app/Slicer.desktop "${HOME}"/.config/autostart/
+ln -s /app/slicer/Slicer "${HOME}"/Desktop/Slicer
 ### option '--skip-startup'
 if [[ "${_arg_skip_startup}" == "on" ]] ; then
 

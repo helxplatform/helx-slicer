@@ -46,7 +46,7 @@ build-nc: ## Build the image without caching.
 		--platform=linux/amd64 \
 		--build-arg BASE_IMAGE=${BASE_IMAGE} \
 		--build-arg BASE_IMAGE_TAG=${BASE_IMAGE_TAG} \
-		--build-arg SLICER_EXTS=${SLICER_TOTSEG_EXTS} \
+		--build-arg SLICER_EXTS=${SLICER_EXTS} \
 		-t ${APP_NAME} .
 
 build-kaniko: ## Build the image with Kaniko.
