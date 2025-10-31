@@ -208,17 +208,58 @@ main() {
 }
 
 ### MAIN ENTRY POINT
-echo "${STARTUPDIR}"
+
+set -oux pipefail
+
+# The USER variable will be set if this container is created with Tycho, on
+# most (if not all) local environments USER will also be set.  If USER is not
+
+if [ -z "${USER+x}" ]; then
+  echo "USER is not set, setting it to helx"
+  USER=headless
+fi
+
+# export USER=${USER-"headless"}
+# export DEFAULT_USER="headless"
+# export HOME="/home/$USER"
+
 id
 whoami
 pwd
-echo "${USER}"
-echo "${HOME}"
+echo ${USER_IDENTITY}
+
+# mkdir -p ${HOME}
+if [ "${USER_IDENTITY:-}" = "ldap" ]; then
+    # When USER_IDENTITY is ldap, do only the default‐environment copy logic
+    if [ ! -f "$HOME/.bashrc" ]; then
+        cp /etc/skel/.bashrc "$HOME/.bashrc"
+    fi
+fi
+
+cd $HOME
+mkdir -p "${HOME}/.config/autostart"
+cp /app/Slicer.desktop  "${HOME}"/.config/autostart/
+# ln -s /app/slicer/Slicer "${HOME}/Desktop/Slicer"
+
+# Change to the root directory to mitigate problems if the current working
+# directory is deleted.
+# cd /
+
+# Add other init scripts in $HELX_SCRIPTS_DIR with ".sh" as their extension.
+# To run in a certain order, name them appropriately.
+# HELX_SCRIPT_DIR=/helx-startup
+# INIT_SCRIPTS_TO_RUN=$(ls -1 $HELX_SCRIPT_DIR/*.sh) || true
+# for INIT_SCRIPT in $INIT_SCRIPTS_TO_RUN
+# do
+#   echo "Running $INIT_SCRIPT"
+#   $INIT_SCRIPT  
+# done
+
+# Change CWD to /home/$USER so it is the starting point for shells in jupyter.
 
 sed -i -e "s|%NB_PREFIX%|${NB_PREFIX#\/}|" "${NOVNC_HOME}/index.html"
 
-if [[ -z "${DEBUGGER}" ]] ; then
-
+if [[ -z "${DEBUGGER:-}" ]] ; then
     trap cleanup SIGINT SIGTERM ERR
     : ${HOME?} ${STARTUPDIR?}
 fi
@@ -228,11 +269,6 @@ declare _verbose=""
 declare _vnc_log="${STARTUPDIR}"/vnc.log
 declare _wait_pid=""
 
-if [ ! -d "${HOME}/.config/autostart" ]; then
-    mkdir -p "${HOME}/.config/autostart"
-fi
-cp /app/Slicer.desktop "${HOME}"/.config/autostart/
-ln -s /app/slicer/Slicer "${HOME}"/Desktop/Slicer
 ### option '--skip-startup'
 if [[ "${_arg_skip_startup}" == "on" ]] ; then
 

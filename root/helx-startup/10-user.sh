@@ -3,6 +3,7 @@
 set -eoux pipefail
 
 if [ "${USER_IDENTITY:-}" = "ldap" ]; then
+    mkdir -p $HOME
     # When USER_IDENTITY is ldap, do only the default‐environment copy logic
     if [ ! -f "$HOME/.bashrc" ]; then
         cp /etc/skel/.bashrc "$HOME/.bashrc"

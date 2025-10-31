@@ -10,9 +10,6 @@ ARG CUDA_KEYRING="cuda-keyring_1.1-1_all.deb"
 ARG NVIDIA_REPOS="https://developer.download.nvidia.com/compute/cuda/repos"
 ARG CUDA_KEYRING_URL="$NVIDIA_REPOS/$DISTRO/$ARCH/$CUDA_KEYRING"
 
-# ENV HEADLESS_USER_ID=30000
-# ENV HEADLESS_USER_GROUP_ID=1136
-
 USER root
 
 ### add 'index.html' for running vnc.html
@@ -37,14 +34,9 @@ RUN wget $CUDA_KEYRING_URL && \
   apt-get update && apt-get install -y cuda-toolkit-12-2
 ENV PATH="$PATH:/usr/local/cuda-12.2/bin"
 
-## START USER SETUP
-COPY root /
-RUN chmod +x /init.sh
-RUN /init.sh
-
 RUN rm -f "${STARTUPDIR}"/.initial_sudo_password
 RUN chmod -R 666 /etc/passwd /etc/group
-RUN chown -R $USER:$GID $STARTUPDIR $HOME $NOVNC_HOME
+# RUN chown -R $USER:$GID $STARTUPDIR $HOME $NOVNC_HOME
 
 ## Install Slicer
 # https://download.slicer.org/
@@ -53,11 +45,11 @@ RUN chown -R $USER:$GID $STARTUPDIR $HOME $NOVNC_HOME
 # Updating Slicer to 5.8.1 (2024-04-09)
 # ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/67c51fc129825655577cfee9
 ARG SLICER_DOWNLOAD_URL=https://download.slicer.org/bitstream/68fc5e93899e73de690004ad
+RUN mkdir -m 777 /app
 WORKDIR /app
 RUN wget $SLICER_DOWNLOAD_URL -O slicer.tar.gz && \
   mkdir slicer && tar -xf slicer.tar.gz -C slicer --strip-components 1 && \
   rm -f slicer.tar.gz && \
-  chown -R $USER:$GID /app/slicer && \
   ln -s /app/slicer/Slicer /usr/local/bin/slicer
 
 # # Install slicer extensions (defined in config.env)
@@ -86,15 +78,25 @@ RUN /app/slicer/bin/PythonSlicer -m pip install matplotlib idc-index totalsegmen
 #   chmod -R 777 "/tmp/" && \
 #   chmod -R 777 "$NOVNC_HOME/"
 # USER "$HEADLESS_USER_ID:$HEADLESS_USER_GROUP_ID"
-RUN chmod -R 777 "/tmp" && \
-  chmod -R 777 "${NOVNC_HOME}" && \
-  chmod -R 777 "${STARTUPDIR}" && \
-  chmod -R 777 /app/
+
 # ## Start Slicer on desktop login
 ## This seems to be XFCE specific, so if the base env changes, will need to find an alternative to this
 COPY Slicer.desktop /app/
 COPY SlicerLauncherSettings.ini /app/
 
+# Set default server env variables
+COPY root /
+ENV GID=0
+RUN chmod +x /fix-permissions.sh
+# RUN /fix-permissions.sh "/home"
+# Verify the next line is working. 
+RUN /fix-permissions.sh "/app/" 
+RUN /fix-permissions.sh "${NOVNC_HOME}"
+RUN /fix-permissions.sh "${STARTUPDIR}"
+
+# RUN chmod -R 777 "/tmp" && \
+#   chmod -R 777 "${NOVNC_HOME}" && \
+#   chmod -R 777 "${STARTUPDIR}"
+
 ## Copy the modified startup script. This is needed to change the index.html file to add NB_PREFIX to the vnc html file.
 COPY startup.sh "${STARTUPDIR}"
-RUN chmod +x "${STARTUPDIR}"/startup.sh
